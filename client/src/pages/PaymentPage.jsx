@@ -24,13 +24,25 @@ export default function PaymentPage() {
   const qrValue = useMemo(() => `upi://pay?pa=dummy@upi&am=${amount}&cu=INR`, [amount]);
 
   const payNow = async () => {
+    const numericAmount = Number(amount);
+
+    if (!Number.isFinite(numericAmount) || numericAmount < 1) {
+      toast.error('Please enter a valid amount greater than 0.');
+      return;
+    }
+
+    if (!import.meta.env.VITE_RAZORPAY_KEY_ID) {
+      toast.error('Missing VITE_RAZORPAY_KEY_ID in client/.env');
+      return;
+    }
+
     setLoading(true);
     try {
       const loaded = await loadScript('https://checkout.razorpay.com/v1/checkout.js');
-      if (!loaded) throw new Error('Unable to load Razorpay checkout');
+      if (!loaded) throw new Error('Unable to load Razorpay checkout script');
 
       const { data } = await api.post('/payments/create-order', {
-        amount: Number(amount),
+        amount: numericAmount,
         mode,
         customer: { name: 'Demo User', email: 'demo@payflow.dev' }
       });
@@ -45,7 +57,7 @@ export default function PaymentPage() {
         handler: async (response) => {
           const verify = await api.post('/payments/verify', {
             ...response,
-            orderMeta: { amount: Number(amount), mode }
+            orderMeta: { amount: numericAmount, mode }
           });
           toast.success('Payment successful');
           navigate(`/payment/success?tx=${verify.data.transaction._id}`);
@@ -65,13 +77,17 @@ export default function PaymentPage() {
         await api.post('/payments/fail', {
           order_id: data.order.id,
           reason: failure.error.description,
-          amount: Number(amount)
+          amount: numericAmount
         });
         navigate('/payment/failure');
       });
       rzp.open();
     } catch (err) {
-      toast.error(err.message);
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        'Payment initialization failed. Check backend connection and API keys.';
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -102,7 +118,7 @@ export default function PaymentPage() {
           </label>
         </div>
         <div className="mt-5 flex flex-wrap items-center gap-4">
-          <button className="rounded-xl bg-indigo-600 px-6 py-3 font-semibold hover:scale-105" onClick={payNow} disabled={loading}>
+          <button className="rounded-xl bg-indigo-600 px-6 py-3 font-semibold hover:scale-105 disabled:cursor-not-allowed disabled:opacity-60" onClick={payNow} disabled={loading}>
             {loading ? 'Processing...' : 'Pay with Razorpay'}
           </button>
           <div className="rounded-xl bg-white p-2">
