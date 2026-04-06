@@ -59,14 +59,6 @@ Backend: `http://localhost:8080`
 npm run seed --prefix server
 ```
 
-## Razorpay & Network Error Troubleshooting
-If you get **"Network Error"** on clicking **Pay with Razorpay**:
-1. Ensure backend is running on `http://localhost:8080`.
-2. Ensure frontend is running on `http://localhost:5173`.
-3. Set `VITE_RAZORPAY_KEY_ID` in `client/.env` (public test key only).
-4. Set `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` in `server/.env`.
-5. Keep `VITE_API_URL` empty to use Vite proxy, or set it to `http://localhost:8080/api`.
-
 ## API Endpoints
 
 ### Payments
